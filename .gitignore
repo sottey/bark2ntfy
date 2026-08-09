@@ -32,3 +32,4 @@ go.work.sum
 # .vscode/
 bark2ntfy
 dist/***
+.DS_Store
