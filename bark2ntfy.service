@@ -1,0 +1,18 @@
+[Unit]
+Description=Bark to ntfy Notification Bridge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=[USER]
+Group=[GROUP]
+
+WorkingDirectory=[BARK2NTFY_DIR]
+ExecStart=[RUN_BARK2NTFY.SH Script]
+
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
