@@ -255,6 +255,65 @@ After changing the unit file, use `systemctl daemon-reload` before restarting. A
 systemctl restart bark2ntfy.service
 ```
 
+## Run with Docker Compose
+
+Docker Compose builds the bridge locally and runs it as a non-root user. It has
+no persistent data volume.
+
+Copy the example configuration, then replace the values with the ntfy server,
+topic, and access token for this bridge:
+
+```sh
+cp .env.example .env
+chmod 600 .env
+```
+
+By default, Compose publishes the bridge only on the host loopback address at
+`127.0.0.1:8080`. Start it with:
+
+```sh
+docker compose up -d --build
+docker compose ps
+docker compose logs -f bark2ntfy
+```
+
+Verify the local health endpoint and then send a test notification:
+
+```sh
+curl --fail-with-body http://127.0.0.1:8080/healthz
+curl --fail-with-body -X POST http://127.0.0.1:8080/push \
+  -H 'Content-Type: application/json' \
+  --data '{"title":"bark2ntfy test","body":"Docker Compose bridge works."}'
+```
+
+Stop the container without deleting the local image:
+
+```sh
+docker compose down
+```
+
+### Compose configuration
+
+The included `compose.yaml` reads the following values from `.env`:
+
+| Variable | Required | Default | Meaning |
+| --- | --- | --- | --- |
+| `NTFY_URL` | **Yes** | none | Base URL of the ntfy server. |
+| `NTFY_TOPIC` | **Yes** | none | Topic for every forwarded notification. |
+| `NTFY_TOKEN` | **Yes** | none | ntfy bearer token. Keep it only in `.env`. |
+| `BARK2NTFY_BIND_ADDRESS` | No | `127.0.0.1` | Host interface to which Docker publishes port 8080. |
+| `BARK2NTFY_HOST_PORT` | No | `8080` | Host port forwarded to the container's port 8080. |
+
+`NTFY_URL`, `NTFY_TOPIC`, and `NTFY_TOKEN` are intentionally required by
+Compose, even though the binary provides development defaults for the first
+two. This prevents accidentally publishing to a default ntfy target.
+
+To expose the bridge to a reverse proxy running on the same host, leave the
+default loopback bind in place and proxy to `http://127.0.0.1:8080`. To expose
+it beyond the host, set `BARK2NTFY_BIND_ADDRESS` to a specific LAN address or
+`0.0.0.0` only after adding an appropriate firewall, VPN, or authenticated
+reverse proxy. The bridge itself does not authenticate incoming requests.
+
 ## Network and security notes
 
 The bridge provides **no incoming authentication**. Anyone who can reach its listening address can ask it to publish to the configured ntfy topic.
